@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieSwipe</title>
+
+  <style>
+    /* LE FOND ET LA STRUCTURE GLOBALE */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0b132b;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: #1c2541;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* LA ZONE PRINCIPALE (Carte + Texte) */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      position: relative;
+    }
+
+    /* LA CARTE (L'affiche) */
+    .carte-film {
+      background-color: #050a17;
+      width: 100%;
+      max-width: 320px;
+      height: 450px;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      display: flex;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    }
+
+    .carte-film:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .swipe-gauche {
+      transform: translateX(-150%) rotate(-20deg) !important;
+      opacity: 0;
+    }
+
+    .swipe-droite {
+      transform: translateX(150%) rotate(20deg) !important;
+      opacity: 0;
+    }
+
+    .affiche {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #ffffff;
+      font-style: italic;
+    }
+
+    /* LA ZONE DE TEXTE (Avec défilement invisible) */
+    .infos-fixes {
+      width: 95%;
+      max-width: 400px;
+      height: 160px;
+      margin-top: 25px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      
+      /* 1. On autorise le défilement vertical */
+      overflow-y: auto; 
+      
+      /* 2. On cache la barre pour Firefox, IE et Edge */
+      scrollbar-width: none; 
+      -ms-overflow-style: none; 
+    }
+
+    /* 3. On cache la barre pour Chrome, Safari et Opera */
+    .infos-fixes::-webkit-scrollbar {
+      display: none; 
+    }
+
+    .titre {
+      margin: 0 0 8px 0;
+      font-size: 1.5em;
+      color: #ffffff;
+    }
+
+    .description {
+      margin: 0;
+      font-size: 0.95em;
+      color: #9fb3c8;
+      line-height: 1.4;
+      padding-bottom: 20px; /* Ajoute un peu d'espace tout à la fin du texte pour respirer */
+    }
+
+    /* LES BOUTONS */
+    .boutons {
+      padding: 10px 20px 30px 20px;
+      display: flex;
+      justify-content: space-evenly;
+      background-color: transparent;
+    }
+
+    button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      font-size: 2em;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+      border: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-non {
+      background-color: transparent;
+      color: #ff4b4b;
+      border: 2px solid #ff4b4b;
+    }
+
+    .btn-non:hover {
+      background-color: #ff4b4b;
+      color: white;
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(255, 75, 75, 0.5);
+    }
+
+    .btn-oui {
+      background-color: transparent;
+      color: #4CAF50;
+      border: 2px solid #4CAF50;
+    }
+
+    .btn-oui:hover {
+      background-color: #4CAF50;
+      color: white;
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>🎬 MovieSwipe</header>
+
+  <main>
+    <div class="carte-film" id="carte">
+      <div class="affiche" id="affiche-film">
+        Chargement...
+      </div>
+    </div>
+
+    <div class="infos-fixes">
+      <h2 class="titre" id="titre-film">Titre du film</h2>
+      <p class="description" id="resume-film">Résumé en cours de chargement...</p>
+    </div>
+  </main>
+
+  <div class="boutons">
+    <button class="btn-non" onclick="swiper('non')">❌</button>
+    <button class="btn-oui" onclick="swiper('oui')">❤️</button>
+  </div>
+
+  <script type="module">
+    // 1. LES IMPORTS FIREBASE (On charge les outils Google)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+
+    // 2. TA CONFIGURATION FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGYw8Ogut6RqfaNi5YnLHbY1UEjlux2fk",
+      authDomain: "movieswipe-95464.firebaseapp.com",
+      projectId: "movieswipe-95464",
+      storageBucket: "movieswipe-95464.firebasestorage.app",
+      messagingSenderId: "512543137074",
+      appId: "1:512543137074:web:75836f25f752f2c2588b2b"
+    };
+
+    // 3. ALLUMAGE DE LA BASE DE DONNÉES
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app); // "db" est notre tableau blanc virtuel !
+
+    // ==========================================
+    // 4. TON ANCIEN CODE TMDB & SWIPE
+    // ==========================================
+    const API_KEY = '5f384e833c17a51649e853af374154da'; 
+    const URL = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=fr-FR`;
+
+    let listeDesFilms = [];
+    let indexFilmActuel = 0;
+
+    async function chargerFilms() {
+        try {
+            const reponse = await fetch(URL);
+            const donnees = await reponse.json();
+            listeDesFilms = donnees.results; 
+            afficherFilmCourant();
+        } catch (erreur) {
+            console.error("Erreur :", erreur);
+        }
+    }
+
+    function afficherFilmCourant() {
+        if (indexFilmActuel >= listeDesFilms.length) return;
+
+        const film = listeDesFilms[indexFilmActuel];
+        document.getElementById('titre-film').textContent = film.title;
+        document.getElementById('resume-film').textContent = film.overview || "Pas de résumé disponible.";
+        const imageUrl = `https://image.tmdb.org/t/p/w500${film.poster_path}`;
+        document.getElementById('affiche-film').innerHTML = `<img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: contain;" alt="Affiche">`;
+        document.querySelector('.infos-fixes').scrollTop = 0;
+    }
+
+    function swiper(choix) {
+        const carte = document.getElementById('carte');
+        
+        if (choix === 'oui') {
+            carte.classList.add('swipe-droite');
+            // BIENTÔT ICI : On enverra un "+1" à Firebase !
+        } else {
+            carte.classList.add('swipe-gauche');
+        }
+
+        setTimeout(() => {
+            indexFilmActuel++;
+            afficherFilmCourant();
+            carte.style.transition = 'none'; 
+            carte.classList.remove('swipe-droite', 'swipe-gauche');
+            setTimeout(() => {
+                carte.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease';
+            }, 50);
+        }, 300);
+    }
+
+    // ASTUCE TECHNIQUE : Quand on utilise <script type="module">, 
+    // les boutons HTML ne trouvent plus les fonctions toutes seules. 
+    // On doit forcer l'application à les reconnaître avec cette ligne :
+    window.swiper = swiper;
+
+    // On lance le chargement
+    chargerFilms();
+  </script>
+
+</body>
+</html>
