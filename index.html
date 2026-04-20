@@ -259,11 +259,9 @@
   </div>
 
 <script type="module">
-    // 1. On ajoute 'remove' dans l'import
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
     import { getDatabase, ref, set, get, child, update, onValue, remove } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
-    // ... (Garde ta config firebaseConfig et l'initialisation du db) ...
     const firebaseConfig = {
       apiKey: "AIzaSyDGYw8Ogut6RqfaNi5YnLHbY1UEjlux2fk",
       authDomain: "movieswipe-95464.firebaseapp.com",
@@ -273,6 +271,7 @@
       appId: "1:512543137074:web:75836f25f752f2c2588b2b",
       databaseURL: "https://movieswipe-95464-default-rtdb.europe-west1.firebasedatabase.app/"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -282,63 +281,58 @@
     let nombreMembresSalon = 0;
     const monIdUnique = 'user_' + Math.random().toString(36).substr(2, 9);
 
-    // --- LOGIQUE DE NETTOYAGE ---
-    function nettoyerSalon() {
-        // On attend 5 secondes avant de tout effacer
-        // Cela permet aux autres joueurs de bien voir l'écran de match
-        setTimeout(() => {
-            const salonRef = ref(db, `salons/${monCodeSalon}`);
-            remove(salonRef)
-                .then(() => console.log("Base de données nettoyée : Salon supprimé."))
-                .catch((error) => console.error("Erreur nettoyage :", error));
-        }, 5000); 
-    }
-
-    // --- MISE À JOUR DE LA FONCTION DE MATCH ---
-    function trouverInfosFilmEtAfficherMatch(filmId) {
-        const filmGagnant = listeDesFilms.find(f => f.id.toString() === filmId.toString());
-        if (filmGagnant) {
-            document.getElementById('titre-match-gagnant').textContent = filmGagnant.title;
-            const imageUrl = `https://image.tmdb.org/t/p/w500${filmGagnant.poster_path}`;
-            document.getElementById('image-match-container').innerHTML = `<img src="${imageUrl}" class="affiche-match">`;
-            document.getElementById('overlay-match').style.display = 'flex';
-
-            // NOUVEAU : On lance le nettoyage dès qu'un match est trouvé !
-            nettoyerSalon();
-        }
-    }
-
-    // ... (Le reste de tes fonctions : creerSalon, rejoindreSalon, ecouterLesMatchs, swiper, etc. restent identiques) ...
-    // Pense bien à copier toutes les fonctions que tu avais déjà !
+    // --- LOGIQUE DE SALON ---
 
     async function creerSalon() {
-        monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString(); 
-        await set(ref(db, 'salons/' + monCodeSalon), { membres: 1, date: Date.now() });
-        ecouterLesMatchs();
-        demarrerAppli();
+        console.log("Nettoyage global et création d'un nouveau salon...");
+        try {
+            // 1. RÉINITIALISATION : On efface TOUS les salons existants dans la DB
+            await remove(ref(db, 'salons'));
+
+            // 2. CRÉATION : On génère le nouveau code
+            monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString(); 
+            await set(ref(db, 'salons/' + monCodeSalon), {
+                membres: 1,
+                date: Date.now()
+            });
+
+            ecouterLesMatchs();
+            demarrerAppli();
+        } catch (error) {
+            console.error("Erreur lors de la création :", error);
+        }
     }
 
     async function rejoindreSalon() {
         const codeSaisi = document.getElementById('input-code').value;
         const snapshot = await get(child(ref(db), `salons/${codeSaisi}`));
+        
         if (snapshot.exists()) {
             monCodeSalon = codeSaisi;
             const nouveauNombre = (snapshot.val().membres || 1) + 1;
             await update(ref(db, 'salons/' + monCodeSalon), { membres: nouveauNombre });
+            
             ecouterLesMatchs();
             demarrerAppli();
-        } else { alert("Salon introuvable !"); }
+        } else { 
+            alert("Salon introuvable !"); 
+        }
     }
+
+    // --- LOGIQUE DE MATCH ---
 
     function ecouterLesMatchs() {
         onValue(ref(db, `salons/${monCodeSalon}`), (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
+            
             nombreMembresSalon = data.membres;
             if (data.votes) {
                 Object.keys(data.votes).forEach(filmId => {
                     const votesDuFilm = data.votes[filmId];
                     const nbVotesPositifs = Object.values(votesDuFilm).filter(v => v === true).length;
+                    
+                    // Match si tout le monde a voté OUI (minimum 2 joueurs)
                     if (nbVotesPositifs >= nombreMembresSalon && nombreMembresSalon > 1) {
                         trouverInfosFilmEtAfficherMatch(filmId);
                     }
@@ -347,26 +341,46 @@
         });
     }
 
-    async function chargerFilms() {
-        const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=5f384e833c17a51649e853af374154da&language=fr-FR`);
-        const data = await res.json();
-        listeDesFilms = data.results;
-        afficherFilmCourant();
+    function trouverInfosFilmEtAfficherMatch(filmId) {
+        const filmGagnant = listeDesFilms.find(f => f.id.toString() === filmId.toString());
+        if (filmGagnant) {
+            document.getElementById('titre-match-gagnant').textContent = filmGagnant.title;
+            const imageUrl = `https://image.tmdb.org/t/p/w500${filmGagnant.poster_path}`;
+            document.getElementById('image-match-container').innerHTML = `<img src="${imageUrl}" class="affiche-match">`;
+            document.getElementById('overlay-match').style.display = 'flex';
+        }
     }
+
+    // --- LOGIQUE DE SWIPE ---
 
     function swiper(choix) {
         const film = listeDesFilms[indexFilmActuel];
         const estOui = (choix === 'oui');
+        
+        // Enregistrement du vote
         set(ref(db, `salons/${monCodeSalon}/votes/${film.id}/${monIdUnique}`), estOui);
+        
         const carte = document.getElementById('carte');
         carte.classList.add(estOui ? 'swipe-droite' : 'swipe-gauche');
+
         setTimeout(() => {
             indexFilmActuel++;
             afficherFilmCourant();
             carte.style.transition = 'none'; 
             carte.classList.remove('swipe-droite', 'swipe-gauche');
-            setTimeout(() => { carte.style.transition = 'transform 0.3s ease, opacity 0.3s ease'; }, 50);
+            setTimeout(() => { 
+                carte.style.transition = 'transform 0.3s ease, opacity 0.3s ease'; 
+            }, 50);
         }, 300);
+    }
+
+    // --- FONCTIONS SYSTÈME ---
+
+    async function chargerFilms() {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=5f384e833c17a51649e853af374154da&language=fr-FR`);
+        const data = await res.json();
+        listeDesFilms = data.results;
+        afficherFilmCourant();
     }
 
     function demarrerAppli() {
@@ -377,14 +391,16 @@
         chargerFilms();
     }
 
-    function fermerMatch() { document.getElementById('overlay-match').style.display = 'none'; }
-    
     function afficherFilmCourant() {
         if (indexFilmActuel >= listeDesFilms.length) return;
         const film = listeDesFilms[indexFilmActuel];
         document.getElementById('titre-film').textContent = film.title;
         document.getElementById('resume-film').textContent = film.overview || "Pas de résumé.";
         document.getElementById('affiche-film').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${film.poster_path}" style="width:100%;height:100%;object-fit:contain;">`;
+    }
+
+    function fermerMatch() { 
+        document.getElementById('overlay-match').style.display = 'none'; 
     }
 
     window.creerSalon = creerSalon;
