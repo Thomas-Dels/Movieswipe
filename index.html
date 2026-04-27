@@ -227,8 +227,9 @@
           <div class="affiche" id="affiche-film">Chargement...</div>
         </div>
         <div class="infos-fixes">
-          <h2 class="titre" id="titre-film">Titre du film</h2>
-          <p class="description" id="resume-film">Résumé...</p>
+          <h2 id="titre-film" style="margin: 0 0 5px 0; font-size: 1.3em;">Chargement...</h2>
+          <div id="note-film" style="color: #ffd700; font-weight: bold; margin-bottom: 5px; font-size: 0.9em;"></div>
+          <p id="resume-film" style="margin: 0; font-size: 0.9em; color: #9fb3c8;"></p>
         </div>
       </main>
 
@@ -426,12 +427,21 @@
     function afficherFilmCourant() {
         if (indexFilmActuel >= listeDesFilms.length) {
             document.getElementById('titre-film').textContent = "Plus de films !";
+            document.getElementById('note-film').textContent = ""; // On efface la note
             document.getElementById('resume-film').textContent = "Relancez un salon.";
             document.getElementById('affiche-film').innerHTML = "";
             return;
         }
+        
         const film = listeDesFilms[indexFilmActuel];
         document.getElementById('titre-film').textContent = film.title;
+        
+        // --- NOUVEAU : GESTION DE LA NOTE ---
+        // On vérifie si le film a une note, et on l'arrondit (ex: 7.4)
+        const note = film.vote_average ? film.vote_average.toFixed(1) : "N/A";
+        document.getElementById('note-film').textContent = `⭐ ${note} / 10`;
+        // ------------------------------------
+
         document.getElementById('resume-film').textContent = film.overview || "Pas de résumé.";
         document.getElementById('affiche-film').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${film.poster_path}" style="width:100%;height:100%;object-fit:cover;">`;
     }
