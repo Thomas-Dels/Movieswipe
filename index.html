@@ -269,12 +269,11 @@
     let monCodeSalon = "";
     let nombreMembresSalon = 0;
     const monIdUnique = 'user_' + Math.random().toString(36).substr(2, 9);
+    const TMDB_API_KEY = '5f384e833c17a51649e853af374154da';
 
     // --- LOGIQUE DE DRAG & SWIPE TACTILE ---
     const carte = document.getElementById('carte');
-    let startX = 0;
-    let currentX = 0;
-    let isDragging = false;
+    let startX = 0, currentX = 0, isDragging = false;
 
     function startDrag(e) {
       isDragging = true;
@@ -308,24 +307,85 @@
     window.addEventListener('touchmove', moveDrag);
     window.addEventListener('touchend', endDrag);
 
+    // --- GÉNÉRATION ALÉATOIRE SÉCURISÉE (FILTRE MAXIMAL) ---
+    async function genererGrandeListeTMDB() {
+        const nbPages = 5; 
+        const requetes = [];
+
+        for (let i = 0; i < nbPages; i++) {
+            const pageAleatoire = Math.floor(Math.random() * 500) + 1;
+            const url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&include_adult=false&with_original_language=en|fr&page=${pageAleatoire}`;
+            requetes.push(fetch(url).then(res => res.json()));
+        }
+
+        try {
+            const resultats = await Promise.all(requetes);
+            let tousLesFilms = [];
+
+            resultats.forEach(data => {
+                if (data.results) tousLesFilms = tousLesFilms.concat(data.results);
+            });
+
+            // 🛑 NOTRE LISTE NOIRE PERSONNALISÉE
+            // Le "i" à la fin signifie qu'il ignore les majuscules/minuscules
+            const motsInterdits = /érotique|erotic|porn\b|porno|hardcore|nympho|sexe\b|kamasutra/i;
+
+            // Filtre global
+            tousLesFilms = tousLesFilms.filter(film => {
+                const aUneAffiche = film.poster_path !== null;
+                const sansCaracteresAsiatiques = !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(film.title);
+                
+                // On vérifie que ni le titre ni le résumé ne contiennent de mots interdits
+                const titrePropre = !motsInterdits.test(film.title);
+                const resumePropre = film.overview ? !motsInterdits.test(film.overview) : true;
+                
+                return aUneAffiche && sansCaracteresAsiatiques && titrePropre && resumePropre;
+            });
+
+            // On mélange le tout
+            return tousLesFilms.sort(() => Math.random() - 0.5);
+        } catch (e) {
+            console.error("Erreur TMDB:", e);
+            return [];
+        }
+    }
+
     // --- LOGIQUE SALON ---
     async function creerSalon() {
-        await remove(ref(db, 'salons'));
+        await remove(ref(db, 'salons')); 
         monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString();
-        await set(ref(db, 'salons/' + monCodeSalon), { membres: 1, date: Date.now() });
+        
+        // C'est le créateur qui génère la liste et l'envoie dans Firebase
+        const films = await genererGrandeListeTMDB();
+        await set(ref(db, 'salons/' + monCodeSalon), { 
+            membres: 1, 
+            date: Date.now(),
+            films: films // On stocke la liste ici !
+        });
+        
+        listeDesFilms = films;
         ecouterLesMatchs();
         demarrerAppli();
     }
 
     async function rejoindreSalon() {
-        const code = document.getElementById('input-code').value;
+        const code = document.getElementById('input-code').value.trim();
+        if (code === "") { alert("Veuillez entrer un code !"); return; }
+        
         const snap = await get(child(ref(db), `salons/${code}`));
         if (snap.exists()) {
             monCodeSalon = code;
-            await update(ref(db, 'salons/' + code), { membres: (snap.val().membres || 1) + 1 });
+            const data = snap.val();
+            
+            // Les amis téléchargent la liste générée par le créateur
+            listeDesFilms = data.films || [];
+            
+            await update(ref(db, 'salons/' + code), { membres: (data.membres || 1) + 1 });
             ecouterLesMatchs();
             demarrerAppli();
-        } else { alert("Code inconnu"); }
+        } else { 
+            alert("Salon introuvable !"); 
+        }
     }
 
     function ecouterLesMatchs() {
@@ -345,8 +405,10 @@
     }
 
     function swiper(choix) {
+        if (!listeDesFilms[indexFilmActuel]) return;
         const film = listeDesFilms[indexFilmActuel];
         const estOui = (choix === 'oui');
+        
         set(ref(db, `salons/${monCodeSalon}/votes/${film.id}/${monIdUnique}`), estOui);
         
         carte.classList.add(estOui ? 'swipe-droite' : 'swipe-gauche');
@@ -358,22 +420,20 @@
             carte.classList.remove('swipe-droite', 'swipe-gauche');
             carte.style.transform = 'translateX(0) rotate(0)';
             setTimeout(() => { carte.style.transition = 'transform 0.3s ease, opacity 0.3s ease'; }, 50);
-        }, 500);
-    }
-
-    async function chargerFilms() {
-        const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=5f384e833c17a51649e853af374154da&language=fr-FR`);
-        const data = await res.json();
-        listeDesFilms = data.results;
-        afficherFilmCourant();
+        }, 300);
     }
 
     function afficherFilmCourant() {
-        if (indexFilmActuel >= listeDesFilms.length) return;
-        const f = listeDesFilms[indexFilmActuel];
-        document.getElementById('titre-film').textContent = f.title;
-        document.getElementById('resume-film').textContent = f.overview || "Pas de résumé.";
-        document.getElementById('affiche-film').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${f.poster_path}">`;
+        if (indexFilmActuel >= listeDesFilms.length) {
+            document.getElementById('titre-film').textContent = "Plus de films !";
+            document.getElementById('resume-film').textContent = "Relancez un salon.";
+            document.getElementById('affiche-film').innerHTML = "";
+            return;
+        }
+        const film = listeDesFilms[indexFilmActuel];
+        document.getElementById('titre-film').textContent = film.title;
+        document.getElementById('resume-film').textContent = film.overview || "Pas de résumé.";
+        document.getElementById('affiche-film').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${film.poster_path}" style="width:100%;height:100%;object-fit:cover;">`;
     }
 
     function afficherMatch(id) {
@@ -390,29 +450,20 @@
         document.getElementById('ecran-swipe').style.display = 'flex';
         document.getElementById('affichage-code').style.display = 'inline-block';
         document.getElementById('affichage-code').textContent = "Code: " + monCodeSalon;
-        chargerFilms();
+        
+        // On affiche directement le premier film au lieu de faire un fetch
+        afficherFilmCourant();
     }
 
     function retourAccueil() {
-    // 1. On réinitialise l'affichage des écrans
-    document.getElementById('ecran-accueil').style.display = 'flex';
-    document.getElementById('ecran-swipe').style.display = 'none';
-    
-    // 2. On cache le code du salon dans le header
-    document.getElementById('affichage-code').style.display = 'none';
-    
-    // 3. Optionnel : On réinitialise les variables locales pour éviter les bugs
-    indexFilmActuel = 0;
-    monCodeSalon = "";
-    
-    console.log("Retour à l'accueil effectué.");
-}
+        window.location.reload();
+    }
 
     window.creerSalon = creerSalon;
     window.rejoindreSalon = rejoindreSalon;
     window.swiper = swiper;
-    window.fermerMatch = () => { document.getElementById('overlay-match').style.display = 'none'; };
     window.retourAccueil = retourAccueil;
+    window.fermerMatch = () => document.getElementById('overlay-match').style.display = 'none';
 </script>
 </body>
 </html>
