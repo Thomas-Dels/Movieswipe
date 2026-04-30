@@ -301,6 +301,18 @@
   </header>
 
   <div id="ecran-accueil">
+      <div style="max-width: 350px; margin-bottom: 25px; text-align: center;">
+          <h2 style="color: #4CAF50; margin: 0 0 10px 0; font-size: 1.8em;">Fini les débats ! 🍿</h2>
+          <p style="color: #9fb3c8; font-size: 1.05em; line-height: 1.5; margin: 0 0 15px 0;">
+              Trouvez le film parfait en groupe, sans vous prendre la tête.
+          </p>
+          
+          <div style="background-color: #1c2541; padding: 15px; border-radius: 15px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-left: 4px solid #4CAF50;">
+              <p style="margin: 5px 0; color: #e0e0e0; font-size: 0.9em;"><strong>1.</strong> Crée un salon ou rejoins tes amis.</p>
+              <p style="margin: 5px 0; color: #e0e0e0; font-size: 0.9em;"><strong>2.</strong> Swipez les films proposés (❤️ ou ❌).</p>
+              <p style="margin: 5px 0; color: #e0e0e0; font-size: 0.9em;"><strong>3.</strong> Si tout le monde dit oui... <strong>c'est un MATCH ! 🎉</strong></p>
+          </div>
+      </div>
       <div class="box-accueil">
           <h2>Nouvelle soirée ?</h2>
           <button class="btn-accueil" onclick="creerSalon()">Créer un salon</button>
@@ -443,30 +455,32 @@
     window.addEventListener('touchmove', moveDrag);
     window.addEventListener('touchend', endDrag);
 
+    // --- GÉNÉRATION ÉQUILIBRÉE (POPULAIRES + DÉCOUVERTE) ---
     async function genererGrandeListeTMDB(providersStr) {
-        const nbPagesVoulues = 5; 
         const requetes = [];
         const filtrePlateformes = providersStr ? `&watch_region=FR&with_watch_monetization_types=flatrate&with_watch_providers=${providersStr}` : '';
-        
-        // L'URL de base (sans le numéro de page)
         const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}`;
 
         try {
-            // 🛑 ÉTAPE 1 : On demande à TMDB la taille exacte du catalogue
+            // 1. On demande la taille totale du catalogue
             const resInitiale = await fetch(`${baseUrl}&page=1`);
             const dataInitiale = await resInitiale.json();
-            
-            // TMDB limite techniquement ses résultats à 500 pages maximum.
-            // S'il y a 38 pages dispo, ça garde 38. S'il y en a 800, ça bloque à 500.
             const pagesDisponibles = Math.min(dataInitiale.total_pages || 1, 500);
 
-            // 🛑 ÉTAPE 2 : On pioche 5 pages VRAIMENT au hasard dans ce total
-            for (let i = 0; i < nbPagesVoulues; i++) {
-                const pageAleatoire = Math.floor(Math.random() * pagesDisponibles) + 1;
-                requetes.push(fetch(`${baseUrl}&page=${pageAleatoire}`).then(res => res.json()));
+            // 🛑 2. LA PIOCHE "BLOCKBUSTERS" (2 pages parmi le Top 10)
+            const maxPagePopulaire = Math.min(10, pagesDisponibles); // On s'assure de ne pas dépasser s'il y a peu de pages
+            for (let i = 0; i < 2; i++) {
+                const pagePopulaire = Math.floor(Math.random() * maxPagePopulaire) + 1;
+                requetes.push(fetch(`${baseUrl}&page=${pagePopulaire}`).then(res => res.json()));
             }
 
-            // ÉTAPE 3 : On télécharge tout en même temps
+            // 🛑 3. LA PIOCHE "DÉCOUVERTE" (3 pages sur TOUT le catalogue)
+            for (let i = 0; i < 3; i++) {
+                const pageDecouverte = Math.floor(Math.random() * pagesDisponibles) + 1;
+                requetes.push(fetch(`${baseUrl}&page=${pageDecouverte}`).then(res => res.json()));
+            }
+
+            // 4. On télécharge tout et on assemble
             const resultats = await Promise.all(requetes);
             let tousLesFilms = [];
 
@@ -474,12 +488,12 @@
                 if (data.results) tousLesFilms = tousLesFilms.concat(data.results);
             });
 
-            // Notre filtre strict (anti-porno, anti-doublon, anti-asiatique)
+            // Filtres stricts et anti-doublons
             const motsInterdits = /érotique|erotic|porn\b|porno|hardcore|nympho|sexe\b|kamasutra/i;
             const idsUniques = new Set();
 
             tousLesFilms = tousLesFilms.filter(film => {
-                if (idsUniques.has(film.id)) return false;
+                if (idsUniques.has(film.id)) return false; // Bloque les doublons stricts
                 idsUniques.add(film.id);
 
                 const aUneAffiche = film.poster_path !== null;
@@ -490,7 +504,7 @@
                 return aUneAffiche && sansCaracteresAsiatiques && titrePropre && resumePropre;
             });
 
-            // On mélange le résultat final
+            // On mélange à fond pour répartir les blockbusters au milieu des films de niche
             return tousLesFilms.sort(() => Math.random() - 0.5);
         } catch (e) {
             console.error("Erreur TMDB:", e);
