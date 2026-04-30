@@ -99,12 +99,14 @@
 
     .carte-film {
       background-color: #050a17;
-      width: 320px; 
-      /* --- LA VRAIE MAGIE EST LÀ --- */
-      flex: 1; /* La carte absorbe l'espace disponible */
-      min-height: 0; /* Autorise l'image à rétrécir si l'écran est minuscule */
-      max-height: 450px; /* Empêche l'image d'être trop géante sur un ordi */
-      /* ----------------------------- */
+      flex: 1; 
+      min-height: 0; 
+      /* --- LA MAGIE EST ICI --- */
+      aspect-ratio: 2 / 3; /* Force la carte à avoir la forme exacte de l'affiche */
+      max-width: 85vw; /* Ne déborde pas sur les côtés sur mobile */
+      max-height: 450px; /* Limite la taille sur un écran d'ordinateur */
+      margin: 0 auto; /* Centre la carte parfaitement */
+      /* ------------------------ */
       border-radius: 20px;
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
       overflow: hidden;
@@ -117,21 +119,21 @@
     }
 
     /* --- 1. AJUSTEMENT SMARTPHONES (Vue Classique) --- */
+    /* --- AJUSTEMENTS MOBILES --- */
     @media (max-width: 600px) {
       .carte-film {
-        width: 85vw; /* S'adapte à la largeur du téléphone */
-        max-height: 55vh; /* Évite que l'image paraisse trop allongée */
+        max-height: 52vh; /* Limite la hauteur de l'affiche pour sauver les boutons */
       }
       .boutons {
         gap: 30px;
         padding-bottom: 25px;
       }
       .infos-fixes {
-        height: 110px; /* Légèrement plus petit sur mobile */
+        height: 110px;
       }
       .description {
         display: -webkit-box;
-        -webkit-line-clamp: 3; /* 🪄 Coupe le texte à 3 lignes max avec "..." */
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
