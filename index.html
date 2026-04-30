@@ -79,7 +79,49 @@
       margin-bottom: 15px;
       box-sizing: border-box;
     }
+    
+    .grille-plateformes {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Met les boîtes sur 2 colonnes */
+      gap: 10px;
+    }
 
+    .plateforme-card {
+      cursor: pointer;
+      display: block;
+    }
+
+    /* 1. On cache la vraie case moche */
+    .plateforme-card input[type="checkbox"] {
+      display: none; 
+    }
+
+    /* 2. Le design de base de la boîte (non cochée) */
+    .plateforme-content {
+      background-color: #0b132b;
+      border: 2px solid #3a506b;
+      border-radius: 12px;
+      padding: 15px 5px;
+      text-align: center;
+      font-weight: bold;
+      color: #5c728a; /* Texte un peu éteint */
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    /* 3. L'effet magique quand c'est coché ! */
+    .plateforme-card input:checked + .plateforme-content {
+      color: white;
+      transform: translateY(-3px); /* Fait "sauter" le bouton légèrement vers le haut */
+      box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+    }
+
+    /* 4. Couleurs officielles pour la surbrillance des bordures */
+    .plateforme-card input:checked + .netflix { border-color: #E50914; background-color: rgba(229, 9, 20, 0.1); }
+    .plateforme-card input:checked + .prime { border-color: #00A8E1; background-color: rgba(0, 168, 225, 0.1); }
+    .plateforme-card input:checked + .disney { border-color: #113CCF; background-color: rgba(17, 60, 207, 0.1); }
+    .plateforme-card input:checked + .canal { border-color: #ffffff; background-color: rgba(255, 255, 255, 0.1); }
+    
     #ecran-swipe {
       display: none;
       flex: 1;
@@ -278,12 +320,27 @@
           <p style="font-size: 1.2em;">Joueurs connectés : <strong id="nb-joueurs">1</strong> 👤</p>
           
           <!-- NOUVEAU : BOÎTE DE CHOIX (Sera cachée pour les invités) -->
-          <div id="choix-plateformes" style="text-align: left; margin: 15px 0; background: #0b132b; padding: 10px; border-radius: 10px; display: none;">
-              <p style="margin: 0 0 10px 0; font-size: 0.9em; text-align: center; color: #9fb3c8;">Plateformes :</p>
-              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="8" checked> 🔴 Netflix</label>
-              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="119" checked> 🔵 Prime Video</label>
-              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="337" checked> 🪄 Disney+</label>
-              <label style="display: block; cursor: pointer;"><input type="checkbox" class="provider-cb" value="381"> ➕ Canal+</label>
+          <div id="choix-plateformes" style="margin: 15px 0; display: none; width: 100%;">
+              <p style="margin: 0 0 10px 0; font-size: 1.1em; text-align: center; color: #9fb3c8;">Qu'est-ce qu'on regarde ?</p>
+              
+              <div class="grille-plateformes">
+                  <label class="plateforme-card">
+                      <input type="checkbox" class="provider-cb" value="8" checked>
+                      <div class="plateforme-content netflix">Netflix</div>
+                  </label>
+                  <label class="plateforme-card">
+                      <input type="checkbox" class="provider-cb" value="119" checked>
+                      <div class="plateforme-content prime">Prime Video</div>
+                  </label>
+                  <label class="plateforme-card">
+                      <input type="checkbox" class="provider-cb" value="337" checked>
+                      <div class="plateforme-content disney">Disney+</div>
+                  </label>
+                  <label class="plateforme-card">
+                      <input type="checkbox" class="provider-cb" value="381">
+                      <div class="plateforme-content canal">Canal+</div>
+                  </label>
+              </div>
           </div>
 
           <button id="btn-commencer" class="btn-accueil" onclick="lancerPartie()" style="margin-top: 20px; display: none;">Lancer la soirée !</button>
