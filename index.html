@@ -113,9 +113,58 @@
 
     /* --- AJUSTEMENT MOBILE --- */
     @media (max-width: 600px) {
-      .carte-film {
-        width: 85vw;
-        height: 55vh;
+      .carte-film { 
+        width: 85vw; 
+        height: 55vh; 
+      }
+      .infos-fixes {
+        width: 90%;
+        height: auto;
+        max-height: 18vh;
+        margin-top: 10px;
+      }
+      .titre { font-size: 1.2em; }
+      .description { font-size: 0.85em; }
+      
+      .boutons { 
+        gap: 30px;
+        padding-bottom: 20px; 
+      }
+      .btn-rond { 
+        width: 60px;
+        height: 60px; 
+        font-size: 1.5em; 
+      }
+      .box-accueil {
+        padding: 20px;
+      }
+    }
+
+    /* --- 2. AJUSTEMENT PETITE HAUTEUR (ex: Mode Paysage ou petits téléphones) --- */
+    @media (max-height: 700px) {
+      header {
+        padding: 10px;
+        font-size: 1.2em;
+      }
+      .carte-film { 
+        height: 50vh; 
+      }
+      .infos-fixes {
+        max-height: 12vh;
+        margin-top: 5px;
+      }
+      .description {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .boutons {
+        padding-bottom: 10px;
+      }
+      .btn-rond { 
+        width: 55px; 
+        height: 55px; 
       }
     }
 
