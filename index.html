@@ -270,6 +270,18 @@
       </div>
   </div>
 
+  <div id="ecran-attente" style="display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center;">
+      <div class="box-accueil">
+          <h2>Salon d'attente</h2>
+          <p style="font-size: 1.2em; color: #9fb3c8;">Code à partager :</p>
+          <h1 id="code-attente" style="font-size: 3em; margin: 10px 0; letter-spacing: 5px; color: #4CAF50;"></h1>
+          <p style="font-size: 1.2em;">Joueurs connectés : <strong id="nb-joueurs">1</strong> 👤</p>
+          
+          <button id="btn-commencer" class="btn-accueil" onclick="lancerPartie()" style="margin-top: 20px; display: none;">Lancer la soirée !</button>
+          <p id="msg-attente" style="margin-top: 20px; color: #9fb3c8;">En attente du créateur...</p>
+      </div>
+  </div>
+
   <div id="ecran-swipe">
       <main>
         <div class="carte-film" id="carte">
@@ -313,7 +325,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
+    
+    let estHost = false; // Permet de savoir si on est le créateur
     let listeDesFilms = [];
     let indexFilmActuel = 0;
     let monCodeSalon = "";
@@ -402,21 +415,21 @@
     }
 
     // --- LOGIQUE SALON ---
-    async function creerSalon() {
+   async function creerSalon() {
         await remove(ref(db, 'salons')); 
         monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString();
+        estHost = true; // Je suis le chef !
         
-        // C'est le créateur qui génère la liste et l'envoie dans Firebase
         const films = await genererGrandeListeTMDB();
         await set(ref(db, 'salons/' + monCodeSalon), { 
             membres: 1, 
             date: Date.now(),
-            films: films // On stocke la liste ici !
+            films: films,
+            statut: 'attente' // Le salon est en attente
         });
         
         listeDesFilms = films;
-        ecouterLesMatchs();
-        demarrerAppli();
+        afficherAttente();
     }
 
     async function rejoindreSalon() {
@@ -425,18 +438,65 @@
         
         const snap = await get(child(ref(db), `salons/${code}`));
         if (snap.exists()) {
-            monCodeSalon = code;
             const data = snap.val();
-            
-            // Les amis téléchargent la liste générée par le créateur
+            if (data.statut === 'en_cours') {
+                alert("La partie a déjà commencé !");
+                return;
+            }
+
+            monCodeSalon = code;
+            estHost = false; // Je suis un invité
             listeDesFilms = data.films || [];
             
             await update(ref(db, 'salons/' + code), { membres: (data.membres || 1) + 1 });
-            ecouterLesMatchs();
-            demarrerAppli();
+            afficherAttente();
         } else { 
             alert("Salon introuvable !"); 
         }
+    }
+    
+    function afficherAttente() {
+        document.getElementById('ecran-accueil').style.display = 'none';
+        document.getElementById('ecran-attente').style.display = 'flex';
+        document.getElementById('code-attente').textContent = monCodeSalon;
+
+        // On affiche le bouton "Lancer" uniquement pour le créateur
+        if (estHost) {
+            document.getElementById('btn-commencer').style.display = 'block';
+            document.getElementById('msg-attente').style.display = 'none';
+        }
+
+        ecouterLesChangements();
+    }
+    window.lancerPartie = async () => {
+        await update(ref(db, 'salons/' + monCodeSalon), { statut: 'en_cours' });
+    };
+
+    function ecouterLesChangements() {
+        onValue(ref(db, `salons/${monCodeSalon}`), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            
+            nombreMembresSalon = data.membres;
+
+            // 1. Met à jour le compteur de joueurs dans la salle d'attente
+            document.getElementById('nb-joueurs').textContent = nombreMembresSalon;
+
+            // 2. Si le Host a cliqué sur "Lancer", on démarre pour tout le monde
+            if (data.statut === 'en_cours' && document.getElementById('ecran-attente').style.display === 'flex') {
+                demarrerAppli();
+            }
+
+            // 3. Écoute des Matchs
+            if (data.votes) {
+                Object.keys(data.votes).forEach(filmId => {
+                    const nbOui = Object.values(data.votes[filmId]).filter(v => v === true).length;
+                    if (nbOui >= nombreMembresSalon && nombreMembresSalon > 1 && !matchsDejaAffiches.includes(filmId.toString())) {
+                        afficherMatch(filmId);
+                    }
+                });
+            }
+        });
     }
 
     function ecouterLesMatchs() {
@@ -508,12 +568,11 @@
     }
 
     function demarrerAppli() {
-        document.getElementById('ecran-accueil').style.display = 'none';
+        document.getElementById('ecran-attente').style.display = 'none'; // On cache l'attente
         document.getElementById('ecran-swipe').style.display = 'flex';
         document.getElementById('affichage-code').style.display = 'inline-block';
         document.getElementById('affichage-code').textContent = "Code: " + monCodeSalon;
         
-        // On affiche directement le premier film au lieu de faire un fetch
         afficherFilmCourant();
     }
 
