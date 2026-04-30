@@ -373,6 +373,10 @@
           <h1 style="color: #4CAF50; margin: 0;">🎉 MATCH !</h1>
           <h2 id="titre-match-gagnant">Nom du film</h2>
           <div id="image-match-container"></div>
+          
+          <!-- NOUVEAU : Zone pour les logos dans le match -->
+          <div id="plateformes-match" style="margin-top: 10px; min-height: 40px; display: flex; gap: 10px; justify-content: center; align-items: center;"></div>
+          
           <button class="btn-accueil" onclick="fermerMatch()" style="margin-top: 20px;">Continuer</button>
       </div>
   </div>
@@ -439,19 +443,30 @@
     window.addEventListener('touchmove', moveDrag);
     window.addEventListener('touchend', endDrag);
 
-    // --- GÉNÉRATION ALÉATOIRE SÉCURISÉE (FILTRE MAXIMAL) ---
     async function genererGrandeListeTMDB(providersStr) {
-        const nbPages = 5; 
+        const nbPagesVoulues = 5; 
         const requetes = [];
         const filtrePlateformes = providersStr ? `&watch_region=FR&with_watch_monetization_types=flatrate&with_watch_providers=${providersStr}` : '';
-
-        for (let i = 0; i < nbPages; i++) {
-            const pageAleatoire = Math.floor(Math.random() * 10) + 1;
-            const url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&include_adult=false&with_original_language=en|fr${filtrePlateformes}&page=${pageAleatoire}`;
-            requetes.push(fetch(url).then(res => res.json()));
-        }
+        
+        // L'URL de base (sans le numéro de page)
+        const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}`;
 
         try {
+            // 🛑 ÉTAPE 1 : On demande à TMDB la taille exacte du catalogue
+            const resInitiale = await fetch(`${baseUrl}&page=1`);
+            const dataInitiale = await resInitiale.json();
+            
+            // TMDB limite techniquement ses résultats à 500 pages maximum.
+            // S'il y a 38 pages dispo, ça garde 38. S'il y en a 800, ça bloque à 500.
+            const pagesDisponibles = Math.min(dataInitiale.total_pages || 1, 500);
+
+            // 🛑 ÉTAPE 2 : On pioche 5 pages VRAIMENT au hasard dans ce total
+            for (let i = 0; i < nbPagesVoulues; i++) {
+                const pageAleatoire = Math.floor(Math.random() * pagesDisponibles) + 1;
+                requetes.push(fetch(`${baseUrl}&page=${pageAleatoire}`).then(res => res.json()));
+            }
+
+            // ÉTAPE 3 : On télécharge tout en même temps
             const resultats = await Promise.all(requetes);
             let tousLesFilms = [];
 
@@ -459,15 +474,13 @@
                 if (data.results) tousLesFilms = tousLesFilms.concat(data.results);
             });
 
+            // Notre filtre strict (anti-porno, anti-doublon, anti-asiatique)
             const motsInterdits = /érotique|erotic|porn\b|porno|hardcore|nympho|sexe\b|kamasutra/i;
-            
-            // 🛑 NOUVEAU : Mémoire des ID pour bloquer les doublons
             const idsUniques = new Set();
 
             tousLesFilms = tousLesFilms.filter(film => {
-                // Si le film est déjà dans notre mémoire, on le supprime (return false)
                 if (idsUniques.has(film.id)) return false;
-                idsUniques.add(film.id); // Sinon on l'enregistre
+                idsUniques.add(film.id);
 
                 const aUneAffiche = film.poster_path !== null;
                 const sansCaracteresAsiatiques = !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(film.title);
@@ -477,6 +490,7 @@
                 return aUneAffiche && sansCaracteresAsiatiques && titrePropre && resumePropre;
             });
 
+            // On mélange le résultat final
             return tousLesFilms.sort(() => Math.random() - 0.5);
         } catch (e) {
             console.error("Erreur TMDB:", e);
@@ -672,14 +686,43 @@
         }
     }
 
-   function afficherMatch(id) {
+   async function afficherMatch(id) {
+        // 🛑 ON MÉMORISE LE MATCH POUR NE PLUS LE RÉAFFICHER
         matchsDejaAffiches.push(id.toString());
 
         const f = listeDesFilms.find(x => x.id.toString() === id.toString());
         if (f) {
             document.getElementById('titre-match-gagnant').textContent = f.title;
             document.getElementById('image-match-container').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${f.poster_path}" class="affiche-match">`;
+            
+            // On prépare la boîte et on affiche la popup de match
+            const divPlateformesMatch = document.getElementById('plateformes-match');
+            divPlateformesMatch.innerHTML = `<span style="font-size:0.8em; color:#9fb3c8;">Recherche plateformes... 🔍</span>`;
             document.getElementById('overlay-match').style.display = 'flex';
+
+            // On va chercher les plateformes en direct
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${f.id}/watch/providers?api_key=${TMDB_API_KEY}`);
+                const data = await res.json();
+                
+                let logosHtml = "";
+                
+                // On vérifie s'il y a des abonnements (flatrate) en France (FR)
+                if (data.results && data.results.FR && data.results.FR.flatrate) {
+                    const plateformesDispos = data.results.FR.flatrate;
+                    
+                    plateformesDispos.forEach(p => {
+                        // Logos légèrement plus grands pour l'écran de match
+                        logosHtml += `<img src="https://image.tmdb.org/t/p/w92${p.logo_path}" title="${p.provider_name}" style="width: 45px; height: 45px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4);">`;
+                    });
+                }
+                
+                // On affiche les logos ou un message si rien n'est trouvé
+                divPlateformesMatch.innerHTML = logosHtml !== "" ? logosHtml : `<span style="font-size:0.9em; color:#ff4b4b;">Non dispo en SVOD</span>`;
+                
+            } catch (e) {
+                divPlateformesMatch.innerHTML = "";
+            }
         }
     }
 
