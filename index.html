@@ -277,6 +277,15 @@
           <h1 id="code-attente" style="font-size: 3em; margin: 10px 0; letter-spacing: 5px; color: #4CAF50;"></h1>
           <p style="font-size: 1.2em;">Joueurs connectés : <strong id="nb-joueurs">1</strong> 👤</p>
           
+          <!-- NOUVEAU : BOÎTE DE CHOIX (Sera cachée pour les invités) -->
+          <div id="choix-plateformes" style="text-align: left; margin: 15px 0; background: #0b132b; padding: 10px; border-radius: 10px; display: none;">
+              <p style="margin: 0 0 10px 0; font-size: 0.9em; text-align: center; color: #9fb3c8;">Plateformes :</p>
+              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="8" checked> 🔴 Netflix</label>
+              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="119" checked> 🔵 Prime Video</label>
+              <label style="display: block; margin-bottom: 5px; cursor: pointer;"><input type="checkbox" class="provider-cb" value="337" checked> 🪄 Disney+</label>
+              <label style="display: block; cursor: pointer;"><input type="checkbox" class="provider-cb" value="381"> ➕ Canal+</label>
+          </div>
+
           <button id="btn-commencer" class="btn-accueil" onclick="lancerPartie()" style="margin-top: 20px; display: none;">Lancer la soirée !</button>
           <p id="msg-attente" style="margin-top: 20px; color: #9fb3c8;">En attente du créateur...</p>
       </div>
@@ -418,17 +427,15 @@
    async function creerSalon() {
         await remove(ref(db, 'salons')); 
         monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString();
-        estHost = true; // Je suis le chef !
+        estHost = true; 
         
-        const films = await genererGrandeListeTMDB();
+        // 🛑 On crée juste la salle d'attente vide, SANS charger les films pour l'instant
         await set(ref(db, 'salons/' + monCodeSalon), { 
             membres: 1, 
             date: Date.now(),
-            films: films,
-            statut: 'attente' // Le salon est en attente
+            statut: 'attente' 
         });
         
-        listeDesFilms = films;
         afficherAttente();
     }
 
@@ -445,8 +452,7 @@
             }
 
             monCodeSalon = code;
-            estHost = false; // Je suis un invité
-            listeDesFilms = data.films || [];
+            estHost = false; 
             
             await update(ref(db, 'salons/' + code), { membres: (data.membres || 1) + 1 });
             afficherAttente();
@@ -460,16 +466,39 @@
         document.getElementById('ecran-attente').style.display = 'flex';
         document.getElementById('code-attente').textContent = monCodeSalon;
 
-        // On affiche le bouton "Lancer" uniquement pour le créateur
+        // Le Host voit le bouton "Lancer" ET les choix de plateformes
         if (estHost) {
             document.getElementById('btn-commencer').style.display = 'block';
+            document.getElementById('choix-plateformes').style.display = 'block';
             document.getElementById('msg-attente').style.display = 'none';
+        } else {
+            document.getElementById('btn-commencer').style.display = 'none';
+            document.getElementById('choix-plateformes').style.display = 'none';
+            document.getElementById('msg-attente').style.display = 'block';
         }
 
         ecouterLesChangements();
     }
+
     window.lancerPartie = async () => {
-        await update(ref(db, 'salons/' + monCodeSalon), { statut: 'en_cours' });
+        // On modifie le bouton pour montrer que ça charge
+        const btn = document.getElementById('btn-commencer');
+        btn.textContent = "Recherche des films en cours... 🍿";
+        btn.disabled = true;
+
+        // 1. On lit les cases cochées
+        const checkboxes = document.querySelectorAll('.provider-cb:checked');
+        const providersList = Array.from(checkboxes).map(cb => cb.value).join('|');
+
+        // 2. Le Host télécharge les films MAINTENANT avec ses critères
+        const films = await genererGrandeListeTMDB(providersList);
+        listeDesFilms = films;
+
+        // 3. On envoie les films dans Firebase et on change le statut pour déclencher le départ !
+        await update(ref(db, 'salons/' + monCodeSalon), { 
+            films: films,
+            statut: 'en_cours' 
+        });
     };
 
     function ecouterLesChangements() {
@@ -478,16 +507,18 @@
             if (!data) return;
             
             nombreMembresSalon = data.membres;
-
-            // 1. Met à jour le compteur de joueurs dans la salle d'attente
             document.getElementById('nb-joueurs').textContent = nombreMembresSalon;
 
-            // 2. Si le Host a cliqué sur "Lancer", on démarre pour tout le monde
+            // Démarrage synchronisé pour tout le monde
             if (data.statut === 'en_cours' && document.getElementById('ecran-attente').style.display === 'flex') {
+                // 🛑 Les invités récupèrent les films générés par le Host
+                if (!estHost) {
+                    listeDesFilms = data.films || [];
+                }
                 demarrerAppli();
             }
 
-            // 3. Écoute des Matchs
+            // Écoute des Matchs
             if (data.votes) {
                 Object.keys(data.votes).forEach(filmId => {
                     const nbOui = Object.values(data.votes[filmId]).filter(v => v === true).length;
