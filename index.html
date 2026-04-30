@@ -92,14 +92,19 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 15px;
+      padding: 10px; /* Un peu moins de marges */
       position: relative;
+      overflow: hidden; /* 🪄 Empêche quoi que ce soit de dépasser */
     }
 
     .carte-film {
       background-color: #050a17;
-      width: 320px; /* Garde la taille fixe ordi */
-      height: 450px;
+      width: 320px; 
+      /* --- LA VRAIE MAGIE EST LÀ --- */
+      flex: 1; /* La carte absorbe l'espace disponible */
+      min-height: 0; /* Autorise l'image à rétrécir si l'écran est minuscule */
+      max-height: 450px; /* Empêche l'image d'être trop géante sur un ordi */
+      /* ----------------------------- */
       border-radius: 20px;
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
       overflow: hidden;
@@ -113,30 +118,22 @@
 
     /* --- 1. AJUSTEMENT SMARTPHONES (Vue Classique) --- */
     @media (max-width: 600px) {
-      .carte-film { 
-        width: 85vw; 
-        height: 48vh; /* 📉 Affiche un peu moins haute */
+      .carte-film {
+        width: 85vw; /* S'adapte à la largeur du téléphone */
+        max-height: 55vh; /* Évite que l'image paraisse trop allongée */
+      }
+      .boutons {
+        gap: 30px;
+        padding-bottom: 25px;
       }
       .infos-fixes {
-        width: 90%;
-        height: auto;
-        max-height: 18vh;
-        margin-top: 10px;
+        height: 110px; /* Légèrement plus petit sur mobile */
       }
-      .titre { font-size: 1.2em; }
-      .description { font-size: 0.85em; }
-      
-      .boutons { 
-        gap: 30px;
-        padding-bottom: 25px; /* On remonte un peu les boutons */
-      }
-      .btn-rond { 
-        width: 60px;
-        height: 60px; 
-        font-size: 1.5em; 
-      }
-      .box-accueil {
-        padding: 20px;
+      .description {
+        display: -webkit-box;
+        -webkit-line-clamp: 3; /* 🪄 Coupe le texte à 3 lignes max avec "..." */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
     }
 
@@ -186,7 +183,8 @@
     .infos-fixes {
       width: 95%;
       max-width: 400px;
-      height: 140px;
+      height: 120px; /* On verrouille la place pour le texte */
+      flex-shrink: 0; /* 🪄 Interdit à l'affiche d'écraser le texte */
       margin-top: 15px;
       text-align: center;
       overflow-y: auto;
