@@ -16,8 +16,7 @@
       flex-direction: column;
       height: 100vh;
       height: 100dvh;
-      overflow: hidden;
-      touch-action: none;
+      scrollbar-width: none;
     }
 
     header {
@@ -281,6 +280,20 @@
     }
 
     .affiche-match { width: 150px; border-radius: 15px; margin: 15px 0; }
+
+    *::-webkit-scrollbar {
+      display: none !important;
+    }
+
+    /* 2. Pour Firefox et les vieux navigateurs */
+    * {
+      -ms-overflow-style: none !important;  
+      scrollbar-width: none !important;  
+    }
+
+    overflow-y: auto;
+    touch-action: pan-y;
+
   </style>
 </head>
 
@@ -288,7 +301,7 @@
 
   <header>
       <img src="logo_movieswipe.png" alt="MovieSwipe" onclick="retourAccueil()" style="height: 50px; max-width: 55vw; object-fit: contain; cursor: pointer;">
-      <button id="btn-historique" onclick="ouvrirHistorique()" style="display: none; background: rgba(255,255,255,0.1); color: white; border: 1px solid #4CAF50; padding: 5px 15px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: 0.3s; flex-shrink: 0;">
+      <button id="btn-historique" onclick="ouvrirHistorique()" style="display: none; background: rgba(255,255,255,0.1); color: white; border: 1px solid #4CAF50; padding: 5px 15px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: 0.3s;">
           Matchs (0)
       </button>
     </header>
@@ -421,19 +434,6 @@
     const TMDB_API_KEY = '5f384e833c17a51649e853af374154da';
     const carte = document.getElementById('carte');
     let startX = 0, currentX = 0, isDragging = false;
-
-    window.retourAccueil = () => {
-        // On vérifie si la variable du salon existe et n'est pas vide
-        if (typeof monCodeSalon !== 'undefined' && monCodeSalon !== "") {
-            // Petite sécurité anti-misclick
-            if (confirm("Veux-tu vraiment quitter ce salon et retourner à l'accueil ?")) {
-                window.location.reload(); // Recharge la page à zéro
-            }
-        } else {
-            // Si on est déjà sur l'écran d'accueil, ça rafraîchit juste la page instantanément
-            window.location.reload(); 
-        }
-    };
 
     function startDrag(e) {
       isDragging = true;
