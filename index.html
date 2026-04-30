@@ -15,8 +15,8 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh; /* 🪄 Gère la barre du navigateur sur mobile */
       overflow: hidden;
-      /* Empêche le rebond du navigateur sur mobile */
       touch-action: none;
     }
 
@@ -111,11 +111,11 @@
       position: relative;
     }
 
-    /* --- AJUSTEMENT MOBILE --- */
+    /* --- 1. AJUSTEMENT SMARTPHONES (Vue Classique) --- */
     @media (max-width: 600px) {
       .carte-film { 
         width: 85vw; 
-        height: 55vh; 
+        height: 48vh; /* 📉 Affiche un peu moins haute */
       }
       .infos-fixes {
         width: 90%;
@@ -128,7 +128,7 @@
       
       .boutons { 
         gap: 30px;
-        padding-bottom: 20px; 
+        padding-bottom: 25px; /* On remonte un peu les boutons */
       }
       .btn-rond { 
         width: 60px;
