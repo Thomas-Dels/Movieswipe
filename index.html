@@ -15,7 +15,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      height: 100dvh; /* 🪄 Gère la barre du navigateur sur mobile */
+      height: 100dvh;
       overflow: hidden;
       touch-action: none;
     }
@@ -82,7 +82,7 @@
     
     .grille-plateformes {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* Met les boîtes sur 2 colonnes */
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
@@ -91,12 +91,10 @@
       display: block;
     }
 
-    /* 1. On cache la vraie case moche */
     .plateforme-card input[type="checkbox"] {
       display: none; 
     }
 
-    /* 2. Le design de base de la boîte (non cochée) */
     .plateforme-content {
       background-color: #0b132b;
       border: 2px solid #3a506b;
@@ -104,19 +102,17 @@
       padding: 15px 5px;
       text-align: center;
       font-weight: bold;
-      color: #5c728a; /* Texte un peu éteint */
+      color: #5c728a; 
       transition: all 0.3s ease;
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
 
-    /* 3. L'effet magique quand c'est coché ! */
     .plateforme-card input:checked + .plateforme-content {
       color: white;
-      transform: translateY(-3px); /* Fait "sauter" le bouton légèrement vers le haut */
+      transform: translateY(-3px);
       box-shadow: 0 8px 15px rgba(0,0,0,0.4);
     }
 
-    /* 4. Couleurs officielles pour la surbrillance des bordures */
     .plateforme-card input:checked + .netflix { border-color: #E50914; background-color: rgba(229, 9, 20, 0.1); }
     .plateforme-card input:checked + .prime { border-color: #00A8E1; background-color: rgba(0, 168, 225, 0.1); }
     .plateforme-card input:checked + .disney { border-color: #113CCF; background-color: rgba(17, 60, 207, 0.1); }
@@ -134,21 +130,19 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 10px; /* Un peu moins de marges */
+      padding: 10px; 
       position: relative;
-      overflow: hidden; /* 🪄 Empêche quoi que ce soit de dépasser */
+      overflow: hidden;
     }
 
     .carte-film {
       background-color: #050a17;
       flex: 1; 
       min-height: 0; 
-      /* --- LA MAGIE EST ICI --- */
-      aspect-ratio: 2 / 3; /* Force la carte à avoir la forme exacte de l'affiche */
-      max-width: 85vw; /* Ne déborde pas sur les côtés sur mobile */
-      max-height: 450px; /* Limite la taille sur un écran d'ordinateur */
-      margin: 0 auto; /* Centre la carte parfaitement */
-      /* ------------------------ */
+      aspect-ratio: 2 / 3; 
+      max-width: 85vw; 
+      max-height: 450px; 
+      margin: 0 auto; 
       border-radius: 20px;
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
       overflow: hidden;
@@ -160,11 +154,9 @@
       position: relative;
     }
 
-    /* --- 1. AJUSTEMENT SMARTPHONES (Vue Classique) --- */
-    /* --- AJUSTEMENTS MOBILES --- */
     @media (max-width: 600px) {
       .carte-film {
-        max-height: 52vh; /* Limite la hauteur de l'affiche pour sauver les boutons */
+        max-height: 52vh;
       }
       .boutons {
         gap: 30px;
@@ -181,7 +173,6 @@
       }
     }
 
-    /* --- 2. AJUSTEMENT PETITE HAUTEUR (ex: Mode Paysage ou petits téléphones) --- */
     @media (max-height: 700px) {
       header {
         padding: 10px;
@@ -227,8 +218,8 @@
     .infos-fixes {
       width: 95%;
       max-width: 400px;
-      height: 120px; /* On verrouille la place pour le texte */
-      flex-shrink: 0; /* 🪄 Interdit à l'affiche d'écraser le texte */
+      height: 120px; 
+      flex-shrink: 0; 
       margin-top: 15px;
       text-align: center;
       overflow-y: auto;
@@ -296,9 +287,23 @@
 <body>
 
   <header>
-    <span onclick="retourAccueil()" style="cursor: pointer; user-select: none;">🎬 MovieSwipe</span>
-    <span id="affichage-code"></span>
-  </header>
+      <img src="logo_movieswipe.png" alt="MovieSwipe" style="height: 55px; object-fit: contain;">
+      <button id="btn-historique" onclick="ouvrirHistorique()" style="display: none; background: rgba(255,255,255,0.1); color: white; border: 1px solid #4CAF50; padding: 5px 15px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: 0.3s;">
+          Matchs (0)
+      </button>
+    </header>
+  
+  <div id="overlay-historique" style="display: none; position: fixed; inset: 0; background: rgba(11, 19, 43, 0.96); z-index: 2000; flex-direction: column; align-items: center; padding: 20px; overflow-y: auto;">
+      <div style="width: 100%; max-width: 500px; position: relative; margin-top: 20px;">
+          <button onclick="fermerHistorique()" style="position: absolute; right: 0; top: 0; background: none; border: none; color: #ff4b4b; font-size: 2.5em; cursor: pointer; line-height: 0.5;">&times;</button>
+          
+          <h2 style="color: #4CAF50; text-align: center; margin-bottom: 30px;">Matchs de la soirée 🍿</h2>
+          
+          <div id="liste-historique" style="display: flex; flex-direction: column; gap: 15px; padding-bottom: 30px;">
+              <!-- Les films matchés apparaîtront ici automatiquement -->
+          </div>
+      </div>
+  </div>
 
   <div id="ecran-accueil">
       <div style="max-width: 350px; margin-bottom: 25px; text-align: center;">
@@ -331,7 +336,6 @@
           <h1 id="code-attente" style="font-size: 3em; margin: 10px 0; letter-spacing: 5px; color: #4CAF50;"></h1>
           <p style="font-size: 1.2em;">Joueurs connectés : <strong id="nb-joueurs">1</strong> 👤</p>
           
-          <!-- NOUVEAU : BOÎTE DE CHOIX (Sera cachée pour les invités) -->
           <div id="choix-plateformes" style="margin: 15px 0; display: none; width: 100%;">
               <p style="margin: 0 0 10px 0; font-size: 1.1em; text-align: center; color: #9fb3c8;">Qu'est-ce qu'on regarde ?</p>
               
@@ -385,10 +389,7 @@
           <h1 style="color: #4CAF50; margin: 0;">🎉 MATCH !</h1>
           <h2 id="titre-match-gagnant">Nom du film</h2>
           <div id="image-match-container"></div>
-          
-          <!-- NOUVEAU : Zone pour les logos dans le match -->
           <div id="plateformes-match" style="margin-top: 10px; min-height: 40px; display: flex; gap: 10px; justify-content: center; align-items: center;"></div>
-          
           <button class="btn-accueil" onclick="fermerMatch()" style="margin-top: 20px;">Continuer</button>
       </div>
   </div>
@@ -410,7 +411,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     
-    let estHost = false; // Permet de savoir si on est le créateur
+    let estHost = false;
     let listeDesFilms = [];
     let indexFilmActuel = 0;
     let monCodeSalon = "";
@@ -418,8 +419,6 @@
     let matchsDejaAffiches = [];
     const monIdUnique = 'user_' + Math.random().toString(36).substr(2, 9);
     const TMDB_API_KEY = '5f384e833c17a51649e853af374154da';
-
-    // --- LOGIQUE DE DRAG & SWIPE TACTILE ---
     const carte = document.getElementById('carte');
     let startX = 0, currentX = 0, isDragging = false;
 
@@ -455,45 +454,35 @@
     window.addEventListener('touchmove', moveDrag);
     window.addEventListener('touchend', endDrag);
 
-    // --- GÉNÉRATION ÉQUILIBRÉE (POPULAIRES + DÉCOUVERTE) ---
     async function genererGrandeListeTMDB(providersStr) {
         const requetes = [];
         const filtrePlateformes = providersStr ? `&watch_region=FR&with_watch_monetization_types=flatrate&with_watch_providers=${providersStr}` : '';
         const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}`;
 
         try {
-            // 1. On demande la taille totale du catalogue
             const resInitiale = await fetch(`${baseUrl}&page=1`);
             const dataInitiale = await resInitiale.json();
             const pagesDisponibles = Math.min(dataInitiale.total_pages || 1, 500);
-
-            // 🛑 2. LA PIOCHE "BLOCKBUSTERS" (2 pages parmi le Top 10)
-            const maxPagePopulaire = Math.min(10, pagesDisponibles); // On s'assure de ne pas dépasser s'il y a peu de pages
+            const maxPagePopulaire = Math.min(10, pagesDisponibles); 
             for (let i = 0; i < 2; i++) {
                 const pagePopulaire = Math.floor(Math.random() * maxPagePopulaire) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pagePopulaire}`).then(res => res.json()));
             }
-
-            // 🛑 3. LA PIOCHE "DÉCOUVERTE" (3 pages sur TOUT le catalogue)
             for (let i = 0; i < 3; i++) {
                 const pageDecouverte = Math.floor(Math.random() * pagesDisponibles) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pageDecouverte}`).then(res => res.json()));
             }
-
-            // 4. On télécharge tout et on assemble
             const resultats = await Promise.all(requetes);
             let tousLesFilms = [];
 
             resultats.forEach(data => {
                 if (data.results) tousLesFilms = tousLesFilms.concat(data.results);
             });
-
-            // Filtres stricts et anti-doublons
             const motsInterdits = /érotique|erotic|porn\b|porno|hardcore|nympho|sexe\b|kamasutra/i;
             const idsUniques = new Set();
 
             tousLesFilms = tousLesFilms.filter(film => {
-                if (idsUniques.has(film.id)) return false; // Bloque les doublons stricts
+                if (idsUniques.has(film.id)) return false;
                 idsUniques.add(film.id);
 
                 const aUneAffiche = film.poster_path !== null;
@@ -503,8 +492,6 @@
                 
                 return aUneAffiche && sansCaracteresAsiatiques && titrePropre && resumePropre;
             });
-
-            // On mélange à fond pour répartir les blockbusters au milieu des films de niche
             return tousLesFilms.sort(() => Math.random() - 0.5);
         } catch (e) {
             console.error("Erreur TMDB:", e);
@@ -512,13 +499,10 @@
         }
     }
 
-    // --- LOGIQUE SALON ---
    async function creerSalon() {
         await remove(ref(db, 'salons')); 
         monCodeSalon = Math.floor(1000 + Math.random() * 9000).toString();
         estHost = true; 
-        
-        // 🛑 On crée juste la salle d'attente vide, SANS charger les films pour l'instant
         await set(ref(db, 'salons/' + monCodeSalon), { 
             membres: 1, 
             date: Date.now(),
@@ -555,7 +539,6 @@
         document.getElementById('ecran-attente').style.display = 'flex';
         document.getElementById('code-attente').textContent = monCodeSalon;
 
-        // Le Host voit le bouton "Lancer" ET les choix de plateformes
         if (estHost) {
             document.getElementById('btn-commencer').style.display = 'block';
             document.getElementById('choix-plateformes').style.display = 'block';
@@ -570,20 +553,13 @@
     }
 
     window.lancerPartie = async () => {
-        // On modifie le bouton pour montrer que ça charge
         const btn = document.getElementById('btn-commencer');
         btn.textContent = "Recherche des films en cours... 🍿";
         btn.disabled = true;
-
-        // 1. On lit les cases cochées
         const checkboxes = document.querySelectorAll('.provider-cb:checked');
         const providersList = Array.from(checkboxes).map(cb => cb.value).join('|');
-
-        // 2. Le Host télécharge les films MAINTENANT avec ses critères
         const films = await genererGrandeListeTMDB(providersList);
         listeDesFilms = films;
-
-        // 3. On envoie les films dans Firebase et on change le statut pour déclencher le départ !
         await update(ref(db, 'salons/' + monCodeSalon), { 
             films: films,
             statut: 'en_cours' 
@@ -598,16 +574,13 @@
             nombreMembresSalon = data.membres;
             document.getElementById('nb-joueurs').textContent = nombreMembresSalon;
 
-            // Démarrage synchronisé pour tout le monde
             if (data.statut === 'en_cours' && document.getElementById('ecran-attente').style.display === 'flex') {
-                // 🛑 Les invités récupèrent les films générés par le Host
                 if (!estHost) {
                     listeDesFilms = data.films || [];
                 }
                 demarrerAppli();
             }
 
-            // Écoute des Matchs
             if (data.votes) {
                 Object.keys(data.votes).forEach(filmId => {
                     const nbOui = Object.values(data.votes[filmId]).filter(v => v === true).length;
@@ -671,28 +644,23 @@
         document.getElementById('resume-film').textContent = film.overview || "Pas de résumé.";
         document.getElementById('affiche-film').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${film.poster_path}" style="width:100%;height:100%;object-fit:cover;">`;
 
-        // 🛑 NOUVEAU : Récupération des plateformes en direct
         const divPlateformes = document.getElementById('plateformes-dispo');
-        divPlateformes.innerHTML = `<span style="font-size:0.8em; color:#9fb3c8;">Recherche 🔍</span>`; // Texte de chargement
+        divPlateformes.innerHTML = `<span style="font-size:0.8em; color:#9fb3c8;">Recherche 🔍</span>`;
 
         try {
-            // On interroge l'API spécifiquement pour ce film
             const res = await fetch(`https://api.themoviedb.org/3/movie/${film.id}/watch/providers?api_key=${TMDB_API_KEY}`);
             const data = await res.json();
             
             let logosHtml = "";
             
-            // On vérifie s'il y a des plateformes en abonnement (flatrate) en France (FR)
             if (data.results && data.results.FR && data.results.FR.flatrate) {
                 const plateformesDispos = data.results.FR.flatrate;
                 
-                // On boucle pour créer une petite image pour chaque plateforme trouvée
                 plateformesDispos.forEach(p => {
                     logosHtml += `<img src="https://image.tmdb.org/t/p/w92${p.logo_path}" title="${p.provider_name}" style="width: 35px; height: 35px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">`;
                 });
             }
             
-            // Si on a des logos, on les affiche, sinon on met un petit texte
             divPlateformes.innerHTML = logosHtml !== "" ? logosHtml : `<span style="font-size:0.8em; color:#ff4b4b;">Non dispo en SVOD</span>`;
             
         } catch (e) {
@@ -701,37 +669,31 @@
     }
 
    async function afficherMatch(id) {
-        // 🛑 ON MÉMORISE LE MATCH POUR NE PLUS LE RÉAFFICHER
         matchsDejaAffiches.push(id.toString());
-
+        document.getElementById('btn-historique').textContent = `Matchs (${matchsDejaAffiches.length})`;
         const f = listeDesFilms.find(x => x.id.toString() === id.toString());
         if (f) {
             document.getElementById('titre-match-gagnant').textContent = f.title;
             document.getElementById('image-match-container').innerHTML = `<img src="https://image.tmdb.org/t/p/w500${f.poster_path}" class="affiche-match">`;
             
-            // On prépare la boîte et on affiche la popup de match
             const divPlateformesMatch = document.getElementById('plateformes-match');
             divPlateformesMatch.innerHTML = `<span style="font-size:0.8em; color:#9fb3c8;">Recherche plateformes... 🔍</span>`;
             document.getElementById('overlay-match').style.display = 'flex';
 
-            // On va chercher les plateformes en direct
             try {
                 const res = await fetch(`https://api.themoviedb.org/3/movie/${f.id}/watch/providers?api_key=${TMDB_API_KEY}`);
                 const data = await res.json();
                 
                 let logosHtml = "";
                 
-                // On vérifie s'il y a des abonnements (flatrate) en France (FR)
                 if (data.results && data.results.FR && data.results.FR.flatrate) {
                     const plateformesDispos = data.results.FR.flatrate;
                     
                     plateformesDispos.forEach(p => {
-                        // Logos légèrement plus grands pour l'écran de match
                         logosHtml += `<img src="https://image.tmdb.org/t/p/w92${p.logo_path}" title="${p.provider_name}" style="width: 45px; height: 45px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4);">`;
                     });
                 }
                 
-                // On affiche les logos ou un message si rien n'est trouvé
                 divPlateformesMatch.innerHTML = logosHtml !== "" ? logosHtml : `<span style="font-size:0.9em; color:#ff4b4b;">Non dispo en SVOD</span>`;
                 
             } catch (e) {
@@ -741,10 +703,10 @@
     }
 
     function demarrerAppli() {
-        document.getElementById('ecran-attente').style.display = 'none'; // On cache l'attente
+        document.getElementById('ecran-attente').style.display = 'none'; 
         document.getElementById('ecran-swipe').style.display = 'flex';
-        document.getElementById('affichage-code').style.display = 'inline-block';
-        document.getElementById('affichage-code').textContent = "Code: " + monCodeSalon;
+        document.getElementById('btn-historique').style.display = 'inline-block';
+        
         
         afficherFilmCourant();
     }
@@ -752,6 +714,37 @@
     function retourAccueil() {
         window.location.reload();
     }
+
+    window.ouvrirHistorique = () => {
+        const conteneur = document.getElementById('liste-historique');
+        conteneur.innerHTML = ""; // On vide la liste
+
+        if (matchsDejaAffiches.length === 0) {
+            conteneur.innerHTML = "<p style='text-align:center; color:#9fb3c8; font-size: 1.2em;'>Aucun match pour le moment 😢<br>Continuez à swiper !</p>";
+        } else {
+            // On parcourt tous les ID mémorisés pour recréer les cartes
+            matchsDejaAffiches.forEach(id => {
+                const film = listeDesFilms.find(f => f.id.toString() === id.toString());
+                if (film) {
+                    conteneur.innerHTML += `
+                        <div style="display: flex; align-items: center; background: #1c2541; padding: 10px; border-radius: 12px; gap: 15px; border: 1px solid #3a506b; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                            <img src="https://image.tmdb.org/t/p/w92${film.poster_path}" style="width: 55px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 5px 0; font-size: 1.1em; color: white;">${film.title}</h3>
+                                <span style="font-size: 0.8em; color: #ffd700;">⭐ ${film.vote_average ? film.vote_average.toFixed(1) : "N/A"} / 10</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        document.getElementById('overlay-historique').style.display = 'flex';
+    };
+
+    window.fermerHistorique = () => {
+        document.getElementById('overlay-historique').style.display = 'none';
+    };
 
     window.creerSalon = creerSalon;
     window.rejoindreSalon = rejoindreSalon;
