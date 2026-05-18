@@ -528,30 +528,38 @@
     window.addEventListener('touchmove', moveDrag);
     window.addEventListener('touchend', endDrag);
 
-    async function genererGrandeListeTMDB(providersStr) {
+    async function genererGrandeListeTMDB(providersStr, genresStr) {
         const requetes = [];
         const filtrePlateformes = providersStr ? `&watch_region=FR&with_watch_monetization_types=flatrate&with_watch_providers=${providersStr}` : '';
         const filtreGenres = genresStr ? `&with_genres=${genresStr}` : '';
+        
         const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}${filtreGenres}`;
+
         try {
             const resInitiale = await fetch(`${baseUrl}&page=1`);
             const dataInitiale = await resInitiale.json();
+            
             const pagesDisponibles = Math.min(dataInitiale.total_pages || 1, 500);
             const maxPagePopulaire = Math.min(10, pagesDisponibles); 
+
+            // 2 pages populaires
             for (let i = 0; i < 2; i++) {
                 const pagePopulaire = Math.floor(Math.random() * maxPagePopulaire) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pagePopulaire}`).then(res => res.json()));
             }
+            // 3 pages découverte
             for (let i = 0; i < 3; i++) {
                 const pageDecouverte = Math.floor(Math.random() * pagesDisponibles) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pageDecouverte}`).then(res => res.json()));
             }
+
             const resultats = await Promise.all(requetes);
             let tousLesFilms = [];
 
             resultats.forEach(data => {
                 if (data.results) tousLesFilms = tousLesFilms.concat(data.results);
             });
+
             const motsInterdits = /érotique|erotic|porn\b|porno|hardcore|nympho|sexe\b|kamasutra/i;
             const idsUniques = new Set();
 
@@ -628,24 +636,41 @@
         ecouterLesChangements();
     }
 
+   // --- LANCEMENT DE LA PARTIE ---
     window.lancerPartie = async () => {
         const btn = document.getElementById('btn-commencer');
         btn.textContent = "Recherche des films en cours... 🍿";
         btn.disabled = true;
-        
-        const checkboxes = document.querySelectorAll('.provider-cb:checked');
-        const providersList = Array.from(checkboxes).map(cb => cb.value).join('|');
-        
-        const checkboxesGenres = document.querySelectorAll('.checkbox-genre:checked');
-        const genresList = Array.from(checkboxesGenres).map(cb => cb.value).join('|');
 
-        const films = await genererGrandeListeTMDB(providersList, genresList);
-        
-        listeDesFilms = films;
-        await update(ref(db, 'salons/' + monCodeSalon), { 
-            films: films,
-            statut: 'en_cours' 
-        });
+        try {
+            const checkboxes = document.querySelectorAll('.provider-cb:checked');
+            const providersList = Array.from(checkboxes).map(cb => cb.value).join('|');
+
+            const checkboxesGenres = document.querySelectorAll('.checkbox-genre:checked');
+            const genresList = Array.from(checkboxesGenres).map(cb => cb.value).join('|');
+
+            const films = await genererGrandeListeTMDB(providersList, genresList);
+
+            if (films.length === 0) {
+                alert("Aucun film trouvé avec ces critères ! Essaye d'élargir tes filtres (par exemple, ajoute une plateforme ou enlève un genre).");
+                btn.textContent = "Lancer la soirée !";
+                btn.disabled = false;
+                return; // On annule le lancement
+            }
+
+            listeDesFilms = films;
+            
+            await update(ref(db, 'salons/' + monCodeSalon), { 
+                films: films,
+                statut: 'en_cours' 
+            });
+
+        } catch (e) {
+            console.error("Erreur bloquante:", e);
+            alert("Une petite erreur est survenue pendant la recherche. Réessaye !");
+            btn.textContent = "Lancer la soirée !";
+            btn.disabled = false;
+        }
     };
 
     function ecouterLesChangements() {
