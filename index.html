@@ -735,7 +735,6 @@
         if (matchsDejaAffiches.length === 0) {
             conteneur.innerHTML = "<p style='text-align:center; color:#9fb3c8; font-size: 1.2em;'>Aucun match pour le moment 😢<br>Continuez à swiper !</p>";
         } else {
-            // On parcourt tous les ID mémorisés pour recréer les cartes
             matchsDejaAffiches.forEach(id => {
                 const film = listeDesFilms.find(f => f.id.toString() === id.toString());
                 if (film) {
