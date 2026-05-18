@@ -404,7 +404,7 @@
           </div>
 
           <div id="choix-genres" style="margin: 15px 0; display: none; width: 100%;">
-              <p style="margin: 15px 0 10px 0; font-size: 1.1em; text-align: center; color: #9fb3c8;">Quel genre ? (Optionnel)</p>
+              <p style="margin: 15px 0 10px 0; font-size: 1.1em; text-align: center; color: #9fb3c8;">Quel genre ?</p>
               <div class="grille-genres">
                   <label class="genre-card">
                       <input type="checkbox" class="checkbox-genre" value="28">
@@ -542,12 +542,10 @@
             const pagesDisponibles = Math.min(dataInitiale.total_pages || 1, 500);
             const maxPagePopulaire = Math.min(10, pagesDisponibles); 
 
-            // 2 pages populaires
             for (let i = 0; i < 2; i++) {
                 const pagePopulaire = Math.floor(Math.random() * maxPagePopulaire) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pagePopulaire}`).then(res => res.json()));
             }
-            // 3 pages découverte
             for (let i = 0; i < 3; i++) {
                 const pageDecouverte = Math.floor(Math.random() * pagesDisponibles) + 1;
                 requetes.push(fetch(`${baseUrl}&page=${pageDecouverte}`).then(res => res.json()));
@@ -624,19 +622,18 @@
         if (estHost) {
             document.getElementById('btn-commencer').style.display = 'block';
             document.getElementById('choix-plateformes').style.display = 'block';
-            document.getElementById('choix-genres').style.display = 'block'; // NOUVEAU
+            document.getElementById('choix-genres').style.display = 'block'; 
             document.getElementById('msg-attente').style.display = 'none';
         } else {
             document.getElementById('btn-commencer').style.display = 'none';
             document.getElementById('choix-plateformes').style.display = 'none';
-            document.getElementById('choix-genres').style.display = 'none'; // NOUVEAU
+            document.getElementById('choix-genres').style.display = 'none'; 
             document.getElementById('msg-attente').style.display = 'block';
         }
 
         ecouterLesChangements();
     }
 
-   // --- LANCEMENT DE LA PARTIE ---
     window.lancerPartie = async () => {
         const btn = document.getElementById('btn-commencer');
         btn.textContent = "Recherche des films en cours... 🍿";
@@ -655,7 +652,7 @@
                 alert("Aucun film trouvé avec ces critères ! Essaye d'élargir tes filtres (par exemple, ajoute une plateforme ou enlève un genre).");
                 btn.textContent = "Lancer la soirée !";
                 btn.disabled = false;
-                return; // On annule le lancement
+                return; 
             }
 
             listeDesFilms = films;
@@ -824,7 +821,7 @@
 
     window.ouvrirHistorique = () => {
         const conteneur = document.getElementById('liste-historique');
-        conteneur.innerHTML = ""; // On vide la liste
+        conteneur.innerHTML = "";
 
         if (matchsDejaAffiches.length === 0) {
             conteneur.innerHTML = "<p style='text-align:center; color:#9fb3c8; font-size: 1.2em;'>Aucun match pour le moment 😢<br>Continuez à swiper !</p>";
