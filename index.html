@@ -285,7 +285,38 @@
       display: none !important;
     }
 
-    /* 2. Pour Firefox et les vieux navigateurs */
+    .grille-genres {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .genre-card { cursor: pointer; display: block; }
+
+    .genre-card input[type="checkbox"] { display: none; }
+
+    .genre-content {
+      background-color: #0b132b;
+      border: 2px solid #3a506b;
+      border-radius: 10px;
+      padding: 8px 2px;
+      text-align: center;
+      font-weight: bold;
+      color: #5c728a;
+      transition: all 0.3s ease;
+      font-size: 0.85em;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .genre-card input:checked + .genre-content {
+      color: white;
+      border-color: #4CAF50;
+      background-color: rgba(76, 175, 80, 0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    }
+
     * {
       -ms-overflow-style: none !important;  
       scrollbar-width: none !important;  
@@ -368,6 +399,36 @@
                   <label class="plateforme-card">
                       <input type="checkbox" class="provider-cb" value="381">
                       <div class="plateforme-content canal">Canal+</div>
+                  </label>
+              </div>
+          </div>
+
+          <div id="choix-genres" style="margin: 15px 0; display: none; width: 100%;">
+              <p style="margin: 15px 0 10px 0; font-size: 1.1em; text-align: center; color: #9fb3c8;">Quel genre ? (Optionnel)</p>
+              <div class="grille-genres">
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="28">
+                      <div class="genre-content">💥 Action</div>
+                  </label>
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="35">
+                      <div class="genre-content">😂 Comédie</div>
+                  </label>
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="27">
+                      <div class="genre-content">👻 Horreur</div>
+                  </label>
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="878">
+                      <div class="genre-content">👽 SF</div>
+                  </label>
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="10749">
+                      <div class="genre-content">❤️ Romance</div>
+                  </label>
+                  <label class="genre-card">
+                      <input type="checkbox" class="checkbox-genre" value="53">
+                      <div class="genre-content">🔪 Thriller</div>
                   </label>
               </div>
           </div>
@@ -470,8 +531,8 @@
     async function genererGrandeListeTMDB(providersStr) {
         const requetes = [];
         const filtrePlateformes = providersStr ? `&watch_region=FR&with_watch_monetization_types=flatrate&with_watch_providers=${providersStr}` : '';
-        const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}`;
-
+        const filtreGenres = genresStr ? `&with_genres=${genresStr}` : '';
+        const baseUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&with_original_language=en|fr${filtrePlateformes}${filtreGenres}`;
         try {
             const resInitiale = await fetch(`${baseUrl}&page=1`);
             const dataInitiale = await resInitiale.json();
@@ -555,10 +616,12 @@
         if (estHost) {
             document.getElementById('btn-commencer').style.display = 'block';
             document.getElementById('choix-plateformes').style.display = 'block';
+            document.getElementById('choix-genres').style.display = 'block'; // NOUVEAU
             document.getElementById('msg-attente').style.display = 'none';
         } else {
             document.getElementById('btn-commencer').style.display = 'none';
             document.getElementById('choix-plateformes').style.display = 'none';
+            document.getElementById('choix-genres').style.display = 'none'; // NOUVEAU
             document.getElementById('msg-attente').style.display = 'block';
         }
 
@@ -569,9 +632,15 @@
         const btn = document.getElementById('btn-commencer');
         btn.textContent = "Recherche des films en cours... 🍿";
         btn.disabled = true;
+        
         const checkboxes = document.querySelectorAll('.provider-cb:checked');
         const providersList = Array.from(checkboxes).map(cb => cb.value).join('|');
-        const films = await genererGrandeListeTMDB(providersList);
+        
+        const checkboxesGenres = document.querySelectorAll('.checkbox-genre:checked');
+        const genresList = Array.from(checkboxesGenres).map(cb => cb.value).join('|');
+
+        const films = await genererGrandeListeTMDB(providersList, genresList);
+        
         listeDesFilms = films;
         await update(ref(db, 'salons/' + monCodeSalon), { 
             films: films,
